@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"image"
+	"image/color"
 	"io"
 	"os/exec"
 	"strconv"
@@ -61,6 +63,14 @@ func main() {
 	// calling Start(false) lets the Start routine return immediately without an additional blocking goroutine
 	robot.Start(false)
 
+	classifier := gocv.NewCascadeClassifier()
+	defer classifier.Close()
+	xmlFile := "haarcascade_frontalface_default.xml"
+	if !classifier.Load(xmlFile) {
+		fmt.Printf("Error reading cascade file: %v\n", xmlFile)
+		return
+	}
+	blue := color.RGBA{0, 0, 255, 0}
 	// now handle video frames from ffmpeg stream in main thread, to be macOS/Windows friendly
 	for {
 		buf := make([]byte, frameSize)
@@ -72,7 +82,22 @@ func main() {
 		if img.Empty() {
 			continue
 		}
+		rects := classifier.DetectMultiScale(img)
+		if len(rects) > 0 {
+			biggest := image.Point{}
+			var rect image.Rectangle
+			for _, re := range rects {
+				if re.Size().X > biggest.X && re.Size().Y > biggest.Y {
+					biggest = re.Size()
+					rect = re
+				}
+			}
+			gocv.Rectangle(&img, rect, blue, 3)
 
+			size := gocv.GetTextSize("Human", gocv.FontHersheyPlain, 1.2, 2)
+			pt := image.Pt(rect.Min.X+(rect.Min.X/2)-(size.X/2), rect.Min.Y-2)
+			gocv.PutText(&img, "Human", pt, gocv.FontHersheyPlain, 1.2, blue, 2)
+		}
 		window.IMShow(img)
 		if window.WaitKey(1) >= 0 {
 			break
