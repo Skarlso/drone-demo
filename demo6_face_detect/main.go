@@ -13,7 +13,6 @@ import (
 	"image/color"
 	"io"
 	"math"
-	"os"
 	"os/exec"
 	"strconv"
 	"sync/atomic"
@@ -113,33 +112,36 @@ func init() {
 	}()
 }
 
+var classifier gocv.CascadeClassifier
+
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("How to run:\ngo run facetracker.go [model] [config] ([backend] [device])")
+	// if len(os.Args) < 2 {
+	// 	fmt.Println("How to run:\ngo run facetracker.go [model] [config] ([backend] [device])")
+	// 	return
+	// }
+
+	classifier = gocv.NewCascadeClassifier()
+	defer classifier.Close()
+	xmlFile := "haarcascade_frontalface_default.xml"
+	if !classifier.Load(xmlFile) {
+		fmt.Printf("Error reading cascade file: %v\n", xmlFile)
 		return
 	}
 
-	model := os.Args[1]
-	config := os.Args[2]
-	backend := gocv.NetBackendDefault
-	if len(os.Args) > 3 {
-		backend = gocv.ParseNetBackend(os.Args[3])
-	}
+	// // model := os.Args[1]
+	// // config := os.Args[2]
+	// backend := gocv.NetBackendDefault
 
-	target := gocv.NetTargetCPU
-	if len(os.Args) > 4 {
-		target = gocv.ParseNetTarget(os.Args[4])
-	}
-
-	n := gocv.ReadNet(model, config)
-	if n.Empty() {
-		fmt.Printf("Error reading network model from : %v %v\n", model, config)
-		return
-	}
-	net = &n
-	defer net.Close()
-	net.SetPreferableBackend(gocv.NetBackendType(backend))
-	net.SetPreferableTarget(gocv.NetTargetType(target))
+	// target := gocv.NetTargetCPU
+	// n := gocv.ReadNet(model, config)
+	// if n.Empty() {
+	// 	fmt.Printf("Error reading network model from : %v %v\n", model, config)
+	// 	return
+	// }
+	// net = &n
+	// defer net.Close()
+	// net.SetPreferableBackend(gocv.NetBackendType(backend))
+	// net.SetPreferableTarget(gocv.NetTargetType(target))
 
 	for {
 		// get next frame from stream
@@ -163,51 +165,41 @@ func main() {
 }
 
 func trackFace(frame *gocv.Mat) {
+	if !tracking {
+		return
+	}
 	W := float64(frame.Cols())
 	H := float64(frame.Rows())
 
-	blob := gocv.BlobFromImage(*frame, 1.0, image.Pt(300, 300), gocv.NewScalar(104, 177, 123, 0), false, false)
-	defer blob.Close()
-
-	net.SetInput(blob, "data")
-
-	detBlob := net.Forward("detection_out")
-	defer detBlob.Close()
-
-	detections := gocv.GetBlobChannel(detBlob, 0, 0)
-	defer detections.Close()
-
-	for r := 0; r < detections.Rows(); r++ {
-		confidence := detections.GetFloatAt(r, 2)
-		if confidence < 0.5 {
-			continue
+	blue := color.RGBA{0, 0, 255, 0}
+	var pt image.Point
+	rects := classifier.DetectMultiScale(*frame)
+	var rect image.Rectangle
+	if len(rects) > 0 {
+		biggest := image.Point{}
+		for _, re := range rects {
+			if re.Size().X > biggest.X && re.Size().Y > biggest.Y {
+				biggest = re.Size()
+				rect = re
+			}
 		}
+		gocv.Rectangle(frame, rect, blue, 3)
 
-		left = float64(detections.GetFloatAt(r, 3)) * W
-		top = float64(detections.GetFloatAt(r, 4)) * H
-		right = float64(detections.GetFloatAt(r, 5)) * W
-		bottom = float64(detections.GetFloatAt(r, 6)) * H
-
-		left = math.Min(math.Max(0.0, left), W-1.0)
-		right = math.Min(math.Max(0.0, right), W-1.0)
-		bottom = math.Min(math.Max(0.0, bottom), H-1.0)
-		top = math.Min(math.Max(0.0, top), H-1.0)
-
-		detected = true
-		rect := image.Rect(int(left), int(top), int(right), int(bottom))
-		gocv.Rectangle(frame, rect, green, 3)
+		size := gocv.GetTextSize("Human", gocv.FontHersheyPlain, 1.2, 2)
+		pt = image.Pt(rect.Min.X+(rect.Min.X/2)-(size.X/2), rect.Min.Y-2)
+		gocv.PutText(frame, "Human", pt, gocv.FontHersheyPlain, 1.2, blue, 2)
 	}
 
-	if !tracking || !detected {
-		return
-	}
+	left := float64(rect.Min.X)
+	top := float64(rect.Min.Y)
+	right := float64(rect.Max.X)
+	bottom := float64(rect.Max.Y)
+	// if detectSize {
+	// 	detectSize = false
+	// 	refDistance = dist(left, top, right, bottom)
+	// }
 
-	if detectSize {
-		detectSize = false
-		refDistance = dist(left, top, right, bottom)
-	}
-
-	distance := dist(left, top, right, bottom)
+	// distance := dist(left, top, right, bottom)
 
 	// x axis
 	switch {
@@ -229,15 +221,15 @@ func trackFace(frame *gocv.Mat) {
 		drone.Up(0)
 	}
 
-	// z axis
-	switch {
-	case distance < refDistance-distTolerance:
-		drone.Forward(20)
-	case distance > refDistance+distTolerance:
-		drone.Backward(20)
-	default:
-		drone.Forward(0)
-	}
+	// // z axis
+	// switch {
+	// case distance < refDistance-distTolerance:
+	// 	drone.Forward(20)
+	// case distance > refDistance+distTolerance:
+	// 	drone.Backward(20)
+	// default:
+	// 	drone.Forward(0)
+	// }
 }
 
 func dist(x1, y1, x2, y2 float64) float64 {
