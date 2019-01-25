@@ -196,10 +196,10 @@ func trackFace(frame *gocv.Mat) {
 	bottom := float64(rect.Max.Y)
 	// if detectSize {
 	// 	detectSize = false
-	// 	refDistance = dist(left, top, right, bottom)
+	refDistance = dist(left, top, right, bottom)
 	// }
 
-	// distance := dist(left, top, right, bottom)
+	distance := dist(left, top, right, bottom)
 
 	// x axis
 	switch {
@@ -215,21 +215,21 @@ func trackFace(frame *gocv.Mat) {
 	switch {
 	case top < H/10:
 		drone.Up(25)
-	case bottom > H-H/10:
+	case bottom > H/10:
 		drone.Down(25)
 	default:
 		drone.Up(0)
 	}
 
-	// // z axis
-	// switch {
-	// case distance < refDistance-distTolerance:
-	// 	drone.Forward(20)
-	// case distance > refDistance+distTolerance:
-	// 	drone.Backward(20)
-	// default:
-	// 	drone.Forward(0)
-	// }
+	// z axis
+	switch {
+	case distance < refDistance-distTolerance:
+		drone.Forward(20)
+	case distance > refDistance+distTolerance:
+		drone.Backward(20)
+	default:
+		drone.Forward(0)
+	}
 }
 
 func dist(x1, y1, x2, y2 float64) float64 {
