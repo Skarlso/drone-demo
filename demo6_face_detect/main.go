@@ -213,9 +213,9 @@ func trackFace(frame *gocv.Mat) {
 	// y axis
 	switch {
 	case top < H/10:
-		drone.Up(25)
+		drone.Up(20)
 	case bottom > H/10:
-		drone.Down(25)
+		drone.Down(20)
 	default:
 		drone.Up(0)
 	}
@@ -232,7 +232,7 @@ func trackFace(frame *gocv.Mat) {
 }
 
 func dist(x1, y1, x2, y2 float64) float64 {
-	return math.Sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1))
+	return math.Sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2))
 }
 
 func handleJoystick() {
