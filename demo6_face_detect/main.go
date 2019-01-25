@@ -188,16 +188,15 @@ func trackFace(frame *gocv.Mat) {
 		size := gocv.GetTextSize("Human", gocv.FontHersheyPlain, 1.2, 2)
 		pt = image.Pt(rect.Min.X+(rect.Min.X/2)-(size.X/2), rect.Min.Y-2)
 		gocv.PutText(frame, "Human", pt, gocv.FontHersheyPlain, 1.2, blue, 2)
+		left = float64(rect.Min.X)
+		top = float64(rect.Min.Y)
+		right = float64(rect.Max.X)
+		bottom = float64(rect.Max.Y)
+		refDistance = dist(left, top, right, bottom)
+	} else {
+		// No face found... just hover.
+		return
 	}
-
-	left := float64(rect.Min.X)
-	top := float64(rect.Min.Y)
-	right := float64(rect.Max.X)
-	bottom := float64(rect.Max.Y)
-	// if detectSize {
-	// 	detectSize = false
-	refDistance = dist(left, top, right, bottom)
-	// }
 
 	distance := dist(left, top, right, bottom)
 
