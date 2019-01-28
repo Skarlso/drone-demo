@@ -108,11 +108,6 @@ func init() {
 var classifier gocv.CascadeClassifier
 
 func main() {
-	// if len(os.Args) < 2 {
-	// 	fmt.Println("How to run:\ngo run facetracker.go [model] [config] ([backend] [device])")
-	// 	return
-	// }
-
 	classifier = gocv.NewCascadeClassifier()
 	defer classifier.Close()
 	xmlFile := "haarcascade_frontalface_default.xml"
@@ -120,21 +115,6 @@ func main() {
 		fmt.Printf("Error reading cascade file: %v\n", xmlFile)
 		return
 	}
-
-	// // model := os.Args[1]
-	// // config := os.Args[2]
-	// backend := gocv.NetBackendDefault
-
-	// target := gocv.NetTargetCPU
-	// n := gocv.ReadNet(model, config)
-	// if n.Empty() {
-	// 	fmt.Printf("Error reading network model from : %v %v\n", model, config)
-	// 	return
-	// }
-	// net = &n
-	// defer net.Close()
-	// net.SetPreferableBackend(gocv.NetBackendType(backend))
-	// net.SetPreferableTarget(gocv.NetTargetType(target))
 
 	for {
 		// get next frame from stream
