@@ -1,12 +1,5 @@
 package main
 
-/*
-You must have ffmpeg and OpenCV installed in order to run this code. It will connect to the Tello
-and then open a window using OpenCV showing the streaming video.
-How to run
-	go run examples/tello_facetracker.go ~/Downloads/res10_300x300_ssd_iter_140000.caffemodel ~/Development/opencv/samples/dnn/face_detector/deploy.prototxt
-*/
-
 import (
 	"fmt"
 	"image"
