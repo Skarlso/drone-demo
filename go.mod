@@ -6,4 +6,5 @@ require (
 	github.com/veandco/go-sdl2 v0.3.0 // indirect
 	gobot.io/x/gobot v1.12.0
 	gocv.io/x/gocv v0.18.0
+	golang.org/x/review v0.0.0-20181129164446-80efb4d00862 // indirect
 )

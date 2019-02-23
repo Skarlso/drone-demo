@@ -10,3 +10,5 @@ gobot.io/x/gobot v1.12.0 h1:zXz48RRRs7QSEN9fbB03lmNnzgRWCJJHOB10g6r1vEw=
 gobot.io/x/gobot v1.12.0/go.mod h1:yQwOPKcHJsXOfrtPaszuiCm/QkUhSNvDwf8+BTrll1A=
 gocv.io/x/gocv v0.18.0 h1:uW6C5ZjvEZjW+SwHtObmIWH73xNSsUXtSR26+k7OHpA=
 gocv.io/x/gocv v0.18.0/go.mod h1:3qacsKAMRS0sZmeLySWcbFeVEU3t86igWaQleAgiuBg=
+golang.org/x/review v0.0.0-20181129164446-80efb4d00862 h1:b2q8pHZoaVglPf0nPxcW3XbJ5dEImq8t5zmmHb652J4=
+golang.org/x/review v0.0.0-20181129164446-80efb4d00862/go.mod h1:M1CFu0V5YHN41gz/7cQPi87zdkj891YOXjLmtXgQwUA=
