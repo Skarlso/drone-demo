@@ -74,22 +74,22 @@ func init() {
 			return
 		}
 
-		drone.On(tello.FlightDataEvent, func(data interface{}) {
+		_ = drone.On(tello.FlightDataEvent, func(data interface{}) {
 			// TODO: protect flight data from race condition
 			flightData = data.(*tello.FlightData)
 		})
 
-		drone.On(tello.ConnectedEvent, func(data interface{}) {
+		_ = drone.On(tello.ConnectedEvent, func(data interface{}) {
 			fmt.Println("Connected")
-			drone.StartVideo()
-			drone.SetVideoEncoderRate(tello.VideoBitRateAuto)
-			drone.SetExposure(0)
+			_ = drone.StartVideo()
+			_ = drone.SetVideoEncoderRate(tello.VideoBitRateAuto)
+			_ = drone.SetExposure(0)
 			gobot.Every(100*time.Millisecond, func() {
-				drone.StartVideo()
+				_ = drone.StartVideo()
 			})
 		})
 
-		drone.On(tello.VideoFrameEvent, func(data interface{}) {
+		_ = drone.On(tello.VideoFrameEvent, func(data interface{}) {
 			pkt := data.([]byte)
 			if _, err := ffmpegIn.Write(pkt); err != nil {
 				fmt.Println(err)
@@ -101,7 +101,7 @@ func init() {
 			[]gobot.Device{drone, stick},
 		)
 
-		robot.Start()
+		_ = robot.Start()
 	}()
 }
 
@@ -165,12 +165,15 @@ func trackFace(frame *gocv.Mat) {
 		top = float64(rect.Min.Y)
 		right = float64(rect.Max.X)
 		bottom = float64(rect.Max.Y)
-		refDistance = dist(left, top, right, bottom)
 	} else {
-		// No face found... just hover.
 		return
 	}
 
+	if detectSize {
+		// Set up the reference distance for the initial face.
+		detectSize = false
+		refDistance = dist(left, top, right, bottom)
+	}
 	distance := dist(left, top, right, bottom)
 
 	// x axis
