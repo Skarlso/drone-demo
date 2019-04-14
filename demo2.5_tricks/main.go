@@ -14,8 +14,8 @@ func main() {
 	work := func() {
 		drone.TakeOff()
 
-		gobot.After(5*time.Second, func() {
-			drone.Land()
+		gobot.After(3*time.Second, func() {
+			drone.PalmLand()
 			os.Exit(0)
 		})
 	}
