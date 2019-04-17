@@ -13,15 +13,15 @@ func main() {
 	work := func() {
 		drone.TakeOff()
 
-		gobot.After(5*time.Second, func() {
+		gobot.After(8*time.Second, func() {
 			drone.FrontFlip()
 		})
 
-		gobot.After(10*time.Second, func() {
+		gobot.After(13*time.Second, func() {
 			drone.BackFlip()
 		})
 
-		gobot.After(15*time.Second, func() {
+		gobot.After(18*time.Second, func() {
 			drone.Land()
 		})
 	}

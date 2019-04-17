@@ -21,7 +21,7 @@ const (
 )
 
 func main() {
-	drone := tello.NewDriver("8890")
+	drone := tello.NewDriver("8888")
 	window := gocv.NewWindow("Tello")
 
 	ffmpeg := exec.Command("ffmpeg", "-hwaccel", "auto", "-hwaccel_device", "opencl", "-i", "pipe:0",

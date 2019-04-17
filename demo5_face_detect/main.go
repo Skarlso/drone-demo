@@ -179,9 +179,9 @@ func trackFace(frame *gocv.Mat) {
 	// x axis
 	switch {
 	case right < W/2:
-		drone.CounterClockwise(50)
+		drone.CounterClockwise(30)
 	case left > W/2:
-		drone.Clockwise(50)
+		drone.Clockwise(30)
 	default:
 		drone.Clockwise(0)
 	}
@@ -199,9 +199,9 @@ func trackFace(frame *gocv.Mat) {
 	// z axis
 	switch {
 	case distance < refDistance-distTolerance:
-		drone.Forward(20)
+		drone.Forward(10)
 	case distance > refDistance+distTolerance:
-		drone.Backward(20)
+		drone.Backward(10)
 	default:
 		drone.Forward(0)
 	}
@@ -259,19 +259,19 @@ func handleJoystick() {
 		rightStick := getRightStick()
 
 		switch {
-		case rightStick.y < -10:
-			drone.Forward(tello.ValidatePitch(rightStick.y, offset))
-		case rightStick.y > 10:
-			drone.Backward(tello.ValidatePitch(rightStick.y, offset))
+		case rightStick.x < -10:
+			drone.Forward(tello.ValidatePitch(rightStick.x, offset))
+		case rightStick.x > 10:
+			drone.Backward(tello.ValidatePitch(rightStick.x, offset))
 		default:
 			drone.Forward(0)
 		}
 
 		switch {
-		case rightStick.x > 10:
-			drone.Right(tello.ValidatePitch(rightStick.x, offset))
-		case rightStick.x < -10:
-			drone.Left(tello.ValidatePitch(rightStick.x, offset))
+		case rightStick.y > 10:
+			drone.Right(tello.ValidatePitch(rightStick.y, offset))
+		case rightStick.y < -10:
+			drone.Left(tello.ValidatePitch(rightStick.y, offset))
 		default:
 			drone.Right(0)
 		}
