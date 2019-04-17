@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"time"
 
 	"gobot.io/x/gobot"
@@ -16,7 +15,6 @@ func main() {
 
 		gobot.After(3*time.Second, func() {
 			drone.PalmLand()
-			os.Exit(0)
 		})
 	}
 
