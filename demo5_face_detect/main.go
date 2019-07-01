@@ -166,6 +166,8 @@ func trackFace(frame *gocv.Mat) {
 		right = float64(rect.Max.X)
 		bottom = float64(rect.Max.Y)
 	} else {
+		// Clear the reference distance.
+		refDistance = 0
 		return
 	}
 
