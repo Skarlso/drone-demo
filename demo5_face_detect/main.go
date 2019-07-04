@@ -38,12 +38,9 @@ var (
 
 	// gocv
 	window = gocv.NewWindow("Tello")
-	net    *gocv.Net
-	green  = color.RGBA{0, 255, 0, 0}
 
 	// tracking
 	tracking                 = false
-	detected                 = false
 	detectSize               = false
 	distTolerance            = 0.05 * dist(0, 0, frameX, frameY)
 	refDistance              float64
@@ -145,6 +142,7 @@ func trackFace(frame *gocv.Mat) {
 	H := float64(frame.Rows())
 
 	blue := color.RGBA{0, 0, 255, 0}
+	red := color.RGBA{255, 0, 0, 0}
 	var pt image.Point
 	rects := classifier.DetectMultiScale(*frame)
 	var rect image.Rectangle
@@ -165,10 +163,6 @@ func trackFace(frame *gocv.Mat) {
 		top = float64(rect.Min.Y)
 		right = float64(rect.Max.X)
 		bottom = float64(rect.Max.Y)
-	} else {
-		// Clear the reference distance.
-		refDistance = 0
-		return
 	}
 
 	if detectSize {
@@ -177,13 +171,31 @@ func trackFace(frame *gocv.Mat) {
 		refDistance = dist(left, top, right, bottom)
 	}
 	distance := dist(left, top, right, bottom)
+	// This right now checks if the face is leaving the FRAME.
+	// But what I want is that it would try to keep the frame in the middle.
+
+	// All I want is to keep it at the same place that it was detected at first.
+	// Which means it's up to the user to have to perfect position... And then click, tracking.
+	// The drone will keep that position.
 
 	// x axis
 	switch {
 	case right < W/2:
-		drone.CounterClockwise(30)
+		drone.CounterClockwise(50)
+		whereTo := rect
+		whereTo.Max.X = int(right + 50)
+		whereTo.Max.Y = int(bottom)
+		whereTo.Min.X = int(left)
+		whereTo.Min.Y = int(top)
+		gocv.Rectangle(frame, whereTo, red, 3)
 	case left > W/2:
-		drone.Clockwise(30)
+		drone.Clockwise(50)
+		whereTo := rect
+		whereTo.Max.X = int(right)
+		whereTo.Max.Y = int(bottom)
+		whereTo.Min.X = int(left + 50)
+		whereTo.Min.Y = int(top)
+		gocv.Rectangle(frame, whereTo, red, 3)
 	default:
 		drone.Clockwise(0)
 	}
@@ -191,9 +203,21 @@ func trackFace(frame *gocv.Mat) {
 	// y axis
 	switch {
 	case top < H/10:
-		drone.Up(20)
-	case bottom > H/10:
-		drone.Down(20)
+		drone.Up(25)
+		whereTo := rect
+		whereTo.Max.X = int(right)
+		whereTo.Max.Y = int(bottom)
+		whereTo.Min.X = int(left)
+		whereTo.Min.Y = int(top + 25)
+		gocv.Rectangle(frame, whereTo, red, 3)
+	case bottom > H-(H/10):
+		drone.Down(25)
+		whereTo := rect
+		whereTo.Max.X = int(right)
+		whereTo.Max.Y = int(bottom + 25)
+		whereTo.Min.X = int(left)
+		whereTo.Min.Y = int(top)
+		gocv.Rectangle(frame, whereTo, red, 3)
 	default:
 		drone.Up(0)
 	}
@@ -201,9 +225,9 @@ func trackFace(frame *gocv.Mat) {
 	// z axis
 	switch {
 	case distance < refDistance-distTolerance:
-		drone.Forward(10)
+		drone.Forward(20)
 	case distance > refDistance+distTolerance:
-		drone.Backward(10)
+		drone.Backward(20)
 	default:
 		drone.Forward(0)
 	}
