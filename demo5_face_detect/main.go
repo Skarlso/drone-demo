@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"image"
-	"image/color"
 	"io"
 	"math"
 	"os/exec"
@@ -29,6 +28,11 @@ const (
 	offset    = 32767.0
 )
 
+type original struct {
+	loc image.Rectangle
+	set bool
+}
+
 var (
 	// ffmpeg command to decode video stream from drone
 	ffmpeg = exec.Command("ffmpeg", "-hwaccel", "auto", "-hwaccel_device", "opencl", "-i", "pipe:0",
@@ -37,7 +41,7 @@ var (
 	ffmpegOut, _ = ffmpeg.StdoutPipe()
 
 	// gocv
-	window = gocv.NewWindow("Tello")
+	//window = gocv.NewWindow("Tello")
 
 	// tracking
 	tracking                 = false
@@ -54,6 +58,9 @@ var (
 	joyAdaptor                   = joystick.NewAdaptor()
 	stick                        = joystick.NewDriver(joyAdaptor, "dualshock4")
 	leftX, leftY, rightX, rightY atomic.Value
+
+	// Original face location
+	orig = original{set: false}
 )
 
 func init() {
@@ -81,7 +88,7 @@ func init() {
 			_ = drone.StartVideo()
 			_ = drone.SetVideoEncoderRate(tello.VideoBitRateAuto)
 			_ = drone.SetExposure(0)
-			gobot.Every(100*time.Millisecond, func() {
+			gobot.Every(30*time.Millisecond, func() {
 				_ = drone.StartVideo()
 			})
 		})
@@ -126,24 +133,27 @@ func main() {
 		}
 
 		trackFace(&img)
-
-		window.IMShow(img)
-		if window.WaitKey(10) >= 0 {
-			break
-		}
+		////
+		//window.IMShow(img)
+		//if window.WaitKey(10) >= 0 {
+		//	break
+		//}
 	}
 }
 
 func trackFace(frame *gocv.Mat) {
+	// Once we detect a face, save that location
+	// From there on every face's location will be tried to move closer to the original.
 	if !tracking {
+		orig.set = false
 		return
 	}
-	W := float64(frame.Cols())
-	H := float64(frame.Rows())
-
-	blue := color.RGBA{0, 0, 255, 0}
-	red := color.RGBA{255, 0, 0, 0}
-	var pt image.Point
+	//blue := color.RGBA{0, 0, 255, 0}
+	//red := color.RGBA{255, 0, 0, 0}
+	//if orig.set {
+	//	gocv.Rectangle(frame, orig.loc, red, 3)
+	//}
+	//var pt image.Point
 	rects := classifier.DetectMultiScale(*frame)
 	var rect image.Rectangle
 	if len(rects) > 0 {
@@ -154,15 +164,22 @@ func trackFace(frame *gocv.Mat) {
 				rect = re
 			}
 		}
-		gocv.Rectangle(frame, rect, blue, 3)
+		//gocv.Rectangle(frame, rect, blue, 3)
 
-		size := gocv.GetTextSize("Human", gocv.FontHersheyPlain, 1.2, 2)
-		pt = image.Pt(rect.Min.X+(rect.Min.X/2)-(size.X/2), rect.Min.Y-2)
-		gocv.PutText(frame, "Human", pt, gocv.FontHersheyPlain, 1.2, blue, 2)
+		//size := gocv.GetTextSize("Human", gocv.FontHersheyPlain, 1.2, 2)
+		//pt = image.Pt(rect.Min.X+(rect.Min.X/2)-(size.X/2), rect.Min.Y-2)
+		//gocv.PutText(frame, "Human", pt, gocv.FontHersheyPlain, 1.2, blue, 2)
 		left = float64(rect.Min.X)
 		top = float64(rect.Min.Y)
 		right = float64(rect.Max.X)
 		bottom = float64(rect.Max.Y)
+		if !orig.set {
+			orig.loc = rect
+			orig.set = true
+			return
+		}
+	} else {
+		return
 	}
 
 	if detectSize {
@@ -171,53 +188,32 @@ func trackFace(frame *gocv.Mat) {
 		refDistance = dist(left, top, right, bottom)
 	}
 	distance := dist(left, top, right, bottom)
-	// This right now checks if the face is leaving the FRAME.
-	// But what I want is that it would try to keep the frame in the middle.
-
-	// All I want is to keep it at the same place that it was detected at first.
-	// Which means it's up to the user to have to perfect position... And then click, tracking.
-	// The drone will keep that position.
+	// If there is an overlap, we are fine... This is to prevent micro corrections to the flight.
+	// Also there because of video latency and error in detemining the new position of the face.
+	// As long as the faces overlap, we aren't going to modify the location of the drone.
+	if rect.In(orig.loc) || rect.Eq(orig.loc) {
+		return
+	}
 
 	// x axis
+	//}
+	//fmt.Println("origin: ", orig.loc)
+	//fmt.Println("new: ", rect)
+	// Only do this if there are no overlaps between the two rectangles.
 	switch {
-	case right < W/2:
-		drone.CounterClockwise(50)
-		whereTo := rect
-		whereTo.Max.X = int(right + 50)
-		whereTo.Max.Y = int(bottom)
-		whereTo.Min.X = int(left)
-		whereTo.Min.Y = int(top)
-		gocv.Rectangle(frame, whereTo, red, 3)
-	case left > W/2:
-		drone.Clockwise(50)
-		whereTo := rect
-		whereTo.Max.X = int(right)
-		whereTo.Max.Y = int(bottom)
-		whereTo.Min.X = int(left + 50)
-		whereTo.Min.Y = int(top)
-		gocv.Rectangle(frame, whereTo, red, 3)
+	case orig.loc.Min.X < rect.Min.X && orig.loc.Max.X < rect.Max.X:
+		drone.Clockwise(25)
+	case orig.loc.Min.X > rect.Min.X && orig.loc.Max.X > rect.Max.X:
+		drone.CounterClockwise(25)
 	default:
 		drone.Clockwise(0)
 	}
 
-	// y axis
 	switch {
-	case top < H/10:
-		drone.Up(25)
-		whereTo := rect
-		whereTo.Max.X = int(right)
-		whereTo.Max.Y = int(bottom)
-		whereTo.Min.X = int(left)
-		whereTo.Min.Y = int(top + 25)
-		gocv.Rectangle(frame, whereTo, red, 3)
-	case bottom > H-(H/10):
+	case orig.loc.Max.Y < rect.Max.Y && orig.loc.Min.Y < rect.Min.Y:
 		drone.Down(25)
-		whereTo := rect
-		whereTo.Max.X = int(right)
-		whereTo.Max.Y = int(bottom + 25)
-		whereTo.Min.X = int(left)
-		whereTo.Min.Y = int(top)
-		gocv.Rectangle(frame, whereTo, red, 3)
+	case orig.loc.Min.Y > rect.Min.Y && orig.loc.Max.Y > rect.Max.Y:
+		drone.Up(25)
 	default:
 		drone.Up(0)
 	}
@@ -248,6 +244,7 @@ func handleJoystick() {
 			println("tracking")
 		} else {
 			detectSize = false
+			orig.set = false
 			println("not tracking")
 		}
 	})
