@@ -1,9 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"image"
-	"image/color"
 	"io"
 	"math"
 	"os/exec"
@@ -42,14 +42,7 @@ var (
 	ffmpegOut, _ = ffmpeg.StdoutPipe()
 
 	// gocv
-	window = gocv.NewWindow("Tello")
-
-	// tracking
-	tracking                 = false
-	detectSize               = false
-	distTolerance            = 0.05 * dist(0, 0, frameX, frameY)
-	refDistance              float64
-	left, top, right, bottom float64
+	//window = gocv.NewWindow("Tello")
 
 	// drone
 	drone      = tello.NewDriver("8890")
@@ -122,39 +115,36 @@ func main() {
 	}
 
 	for {
-		// get next frame from stream
-		buf := make([]byte, frameSize)
-		if _, err := io.ReadFull(ffmpegOut, buf); err != nil {
-			fmt.Println(err)
-			continue
-		}
-		img, _ := gocv.NewMatFromBytes(frameY, frameX, gocv.MatTypeCV8UC3, buf)
-		if img.Empty() {
-			continue
-		}
-
-		trackFace(&img)
-		////
-		window.IMShow(img)
-		if window.WaitKey(10) >= 0 {
+		err := runTrack()
+		if err != nil {
 			break
 		}
+		////
+		//window.IMShow(img)
+		//if window.WaitKey(10) >= 0 {
+		//	break
+		//}
 	}
 }
 
-func trackFace(frame *gocv.Mat) {
-	// Once we detect a face, save that location
-	// From there on every face's location will be tried to move closer to the original.
-	if !tracking {
-		orig.set = false
-		return
+func runTrack() error {
+	// Fly forward -- 20
+	// get next frame from stream
+	buf := make([]byte, frameSize)
+	if _, err := io.ReadFull(ffmpegOut, buf); err != nil {
+		fmt.Println(err)
+		return errors.New("err ffmpegOut")
 	}
-	blue := color.RGBA{0, 0, 255, 0}
-	// red := color.RGBA{255, 0, 0, 0}
-	//if orig.set {
-	//	gocv.Rectangle(frame, orig.loc, red, 3)
-	//}
-	var pt image.Point
+	img, _ := gocv.NewMatFromBytes(frameY, frameX, gocv.MatTypeCV8UC3, buf)
+	if img.Empty() {
+		return errors.New("error in NewMat")
+	}
+
+	detectObject(&img)
+	return nil
+}
+
+func detectObject(frame *gocv.Mat) {
 	rects := classifier.DetectMultiScale(*frame)
 	var rect image.Rectangle
 	if len(rects) > 0 {
@@ -165,11 +155,11 @@ func trackFace(frame *gocv.Mat) {
 				rect = re
 			}
 		}
-		gocv.Rectangle(frame, rect, blue, 3)
+		//gocv.Rectangle(frame, rect, blue, 3)
 
-		size := gocv.GetTextSize("Human", gocv.FontHersheyPlain, 1.2, 2)
-		pt = image.Pt(rect.Min.X+(rect.Min.X/2)-(size.X/2), rect.Min.Y-2)
-		gocv.PutText(frame, "Human", pt, gocv.FontHersheyPlain, 1.2, blue, 2)
+		//size := gocv.GetTextSize("Human", gocv.FontHersheyPlain, 1.2, 2)
+		//pt = image.Pt(rect.Min.X+(rect.Min.X/2)-(size.X/2), rect.Min.Y-2)
+		//gocv.PutText(frame, "Human", pt, gocv.FontHersheyPlain, 1.2, blue, 2)
 		left = float64(rect.Min.X)
 		top = float64(rect.Min.Y)
 		right = float64(rect.Max.X)
@@ -192,7 +182,7 @@ func trackFace(frame *gocv.Mat) {
 	// If there is an overlap, we are fine... This is to prevent micro corrections to the flight.
 	// Also there because of video latency and error in detemining the new position of the face.
 	// As long as the faces overlap, we aren't going to modify the location of the drone.
-	if rect.Intersect(orig.loc).Eq(image.ZR) {
+	if rect.In(orig.loc) || rect.Eq(orig.loc) {
 		return
 	}
 
