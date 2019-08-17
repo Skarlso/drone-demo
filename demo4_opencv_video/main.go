@@ -21,7 +21,7 @@ const (
 )
 
 func main() {
-	drone := tello.NewDriver("8888")
+	drone := tello.NewDriver("8890")
 	window := gocv.NewWindow("Tello")
 
 	ffmpeg := exec.Command("ffmpeg", "-hwaccel", "auto", "-hwaccel_device", "opencl", "-i", "pipe:0",
@@ -29,11 +29,16 @@ func main() {
 	ffmpegIn, _ := ffmpeg.StdinPipe()
 	ffmpegOut, _ := ffmpeg.StdoutPipe()
 
-	work := func() {
+	go func() {
 		if err := ffmpeg.Start(); err != nil {
 			fmt.Println(err)
 			return
 		}
+
+		_ = drone.On(tello.FlightDataEvent, func(data interface{}) {
+			// TODO: protect flight data from race condition
+			// flightData = data.(*tello.FlightData)
+		})
 
 		drone.On(tello.ConnectedEvent, func(data interface{}) {
 			fmt.Println("Connected")
@@ -41,7 +46,7 @@ func main() {
 			drone.SetVideoEncoderRate(tello.VideoBitRateAuto)
 			drone.SetExposure(0)
 
-			gobot.Every(100*time.Millisecond, func() {
+			gobot.Every(30*time.Millisecond, func() {
 				drone.StartVideo()
 			})
 		})
@@ -52,16 +57,15 @@ func main() {
 				fmt.Println(err)
 			}
 		})
-	}
 
-	robot := gobot.NewRobot("tello",
-		[]gobot.Connection{},
-		[]gobot.Device{drone},
-		work,
-	)
+		robot := gobot.NewRobot("tello",
+			[]gobot.Connection{},
+			[]gobot.Device{drone},
+		)
 
-	// calling Start(false) lets the Start routine return immediately without an additional blocking goroutine
-	robot.Start(false)
+		// calling Start(false) lets the Start routine return immediately without an additional blocking goroutine
+		_ = robot.Start()
+	}()
 
 	classifier := gocv.NewCascadeClassifier()
 	defer classifier.Close()
@@ -99,7 +103,7 @@ func main() {
 			gocv.PutText(&img, "Human", pt, gocv.FontHersheyPlain, 1.2, blue, 2)
 		}
 		window.IMShow(img)
-		if window.WaitKey(1) >= 0 {
+		if window.WaitKey(10) >= 0 {
 			break
 		}
 	}

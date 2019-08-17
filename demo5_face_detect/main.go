@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"image"
+	"image/color"
 	"io"
 	"math"
 	"os/exec"
@@ -41,7 +42,7 @@ var (
 	ffmpegOut, _ = ffmpeg.StdoutPipe()
 
 	// gocv
-	//window = gocv.NewWindow("Tello")
+	window = gocv.NewWindow("Tello")
 
 	// tracking
 	tracking                 = false
@@ -134,10 +135,10 @@ func main() {
 
 		trackFace(&img)
 		////
-		//window.IMShow(img)
-		//if window.WaitKey(10) >= 0 {
-		//	break
-		//}
+		window.IMShow(img)
+		if window.WaitKey(10) >= 0 {
+			break
+		}
 	}
 }
 
@@ -148,12 +149,12 @@ func trackFace(frame *gocv.Mat) {
 		orig.set = false
 		return
 	}
-	//blue := color.RGBA{0, 0, 255, 0}
-	//red := color.RGBA{255, 0, 0, 0}
+	blue := color.RGBA{0, 0, 255, 0}
+	// red := color.RGBA{255, 0, 0, 0}
 	//if orig.set {
 	//	gocv.Rectangle(frame, orig.loc, red, 3)
 	//}
-	//var pt image.Point
+	var pt image.Point
 	rects := classifier.DetectMultiScale(*frame)
 	var rect image.Rectangle
 	if len(rects) > 0 {
@@ -164,11 +165,11 @@ func trackFace(frame *gocv.Mat) {
 				rect = re
 			}
 		}
-		//gocv.Rectangle(frame, rect, blue, 3)
+		gocv.Rectangle(frame, rect, blue, 3)
 
-		//size := gocv.GetTextSize("Human", gocv.FontHersheyPlain, 1.2, 2)
-		//pt = image.Pt(rect.Min.X+(rect.Min.X/2)-(size.X/2), rect.Min.Y-2)
-		//gocv.PutText(frame, "Human", pt, gocv.FontHersheyPlain, 1.2, blue, 2)
+		size := gocv.GetTextSize("Human", gocv.FontHersheyPlain, 1.2, 2)
+		pt = image.Pt(rect.Min.X+(rect.Min.X/2)-(size.X/2), rect.Min.Y-2)
+		gocv.PutText(frame, "Human", pt, gocv.FontHersheyPlain, 1.2, blue, 2)
 		left = float64(rect.Min.X)
 		top = float64(rect.Min.Y)
 		right = float64(rect.Max.X)

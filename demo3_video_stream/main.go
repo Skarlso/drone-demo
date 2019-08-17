@@ -13,7 +13,7 @@ func main() {
 	drone := tello.NewDriver("8890")
 
 	work := func() {
-		mplayer := exec.Command("mplayer", "-fps", "25", "-")
+		mplayer := exec.Command("mplayer", "-fps", "60", "-")
 		// /Applications/MPlayer\ OSX\ Extended.app/Contents/MacOS/MPlayer\ OSX\ Extended
 		// /Applications/MPlayer\ OSX\ Extended.app/Contents/Resources/Binaries/mpextended.mpBinaries/Contents/MacOS/mplayer
 		mplayerIn, _ := mplayer.StdinPipe()
