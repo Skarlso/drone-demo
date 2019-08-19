@@ -192,7 +192,7 @@ func trackFace(frame *gocv.Mat) {
 	// If there is an overlap, we are fine... This is to prevent micro corrections to the flight.
 	// Also there because of video latency and error in detemining the new position of the face.
 	// As long as the faces overlap, we aren't going to modify the location of the drone.
-	if rect.Intersect(orig.loc).Eq(image.ZR) {
+	if !rect.Intersect(orig.loc).Eq(image.ZR) {
 		return
 	}
 
