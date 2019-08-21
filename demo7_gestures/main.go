@@ -186,6 +186,13 @@ func detectGesture(img *gocv.Mat) {
 	gocv.Rectangle(img, rect, color.RGBA{R: 255, G: 255, B: 255, A: 0}, 2)
 
 	gocv.PutText(img, status, image.Pt(10, 20), gocv.FontHersheyPlain, 1.2, green, 2)
+	if defectCount+1 > 3 {
+		drone.FrontFlip()
+	} else if defectCount == 3 {
+		drone.LeftFlip()
+	} else if defectCount == 6 {
+		drone.Land()
+	}
 
 }
 
