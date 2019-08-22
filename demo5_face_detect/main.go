@@ -150,10 +150,10 @@ func trackFace(frame *gocv.Mat) {
 		return
 	}
 	blue := color.RGBA{0, 0, 255, 0}
-	// red := color.RGBA{255, 0, 0, 0}
-	//if orig.set {
-	//	gocv.Rectangle(frame, orig.loc, red, 3)
-	//}
+	red := color.RGBA{255, 0, 0, 0}
+	if orig.set {
+		gocv.Rectangle(frame, orig.loc, red, 3)
+	}
 	var pt image.Point
 	rects := classifier.DetectMultiScale(*frame)
 	var rect image.Rectangle

@@ -22,7 +22,8 @@ func main() {
 		})
 
 		gobot.After(19*time.Second, func() {
-			drone.Land()
+			// drone.Land()
+			drone.PalmLand()
 		})
 	}
 

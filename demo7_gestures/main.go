@@ -214,6 +214,7 @@ func handleJoystick() {
 		drone.Forward(0)
 		drone.Up(0)
 		drone.Clockwise(0)
+		println("tracking gestures")
 		tracking = !tracking
 	})
 	stick.On(joystick.SquarePress, func(data interface{}) {
